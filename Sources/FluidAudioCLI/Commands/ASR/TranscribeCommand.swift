@@ -163,6 +163,31 @@ enum TranscribeCommand {
             print(String(repeating: "=", count: 50))
             print("\nFinal transcription:")
             print(result.text)
+            
+            // Print token timings as JSON for better readability
+            if let tokenTimings = result.tokenTimings {
+                print("\nToken Timings (JSON):")
+                do {
+                    let jsonData = try JSONSerialization.data(withJSONObject: tokenTimings.map { timing in
+                        return [
+                            "token": timing.token,
+                            "tokenId": timing.tokenId,
+                            "startTime": timing.startTime,
+                            "endTime": timing.endTime,
+                            "confidence": timing.confidence
+                        ]
+                    }, options: [.prettyPrinted])
+                    
+                    if let jsonString = String(data: jsonData, encoding: .utf8) {
+                        print(jsonString)
+                    }
+                } catch {
+                    print("Failed to serialize token timings to JSON: \(error)")
+                    print(result.tokenTimings ?? "No token timings")
+                }
+            } else {
+                print("\nNo token timings available")
+            }
 
             let rtfx = duration / processingTime
 

@@ -36,8 +36,6 @@ struct ChunkProcessor {
             // Determine if this is the last chunk
             let isLastChunk = (centerStart + centerSamples) >= audioSamples.count
 
-            // Process chunk with explicit last chunk detection
-
             let (windowTokens, windowTimestamps, maxFrame) = try await processWindowWithTokens(
                 centerStart: centerStart,
                 segmentIndex: segmentIndex,
@@ -109,6 +107,7 @@ struct ChunkProcessor {
             leftContextSeconds: actualLeftContextSeconds
         )
 
+
         let (tokens, timestamps, encLen) = try await manager.executeMLInferenceWithTimings(
             paddedChunk,
             originalLength: chunkSamples.count,
@@ -125,9 +124,13 @@ struct ChunkProcessor {
 
         // Take all tokens from decoder (it already processed only the relevant frames)
         let filteredTokens = tokens
-        let filteredTimestamps = timestamps
-        let maxFrame = timestamps.max() ?? 0
+        
+        // Adjust timestamps to be globally continuous across chunks
+        // The decoder returns chunk-relative frame indices, we need to add the global offset
+        let globalFrameOffset = Int(round(Double(segmentIndex) * centerSeconds * (1.0 / 0.08)))
+        let adjustedTimestamps = timestamps.map { $0 + globalFrameOffset }
+        let maxFrame = adjustedTimestamps.max() ?? 0
 
-        return (filteredTokens, filteredTimestamps, maxFrame)
+        return (filteredTokens, adjustedTimestamps, maxFrame)
     }
 }
