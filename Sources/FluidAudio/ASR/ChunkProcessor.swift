@@ -125,9 +125,10 @@ struct ChunkProcessor {
         // Take all tokens from decoder (it already processed only the relevant frames)
         let filteredTokens = tokens
         
+
         // Adjust timestamps to be globally continuous across chunks
         // The decoder returns chunk-relative frame indices, we need to add the global offset
-        let globalFrameOffset = Int(round(Double(segmentIndex) * centerSeconds * (1.0 / 0.08)))
+        let globalFrameOffset = Int(round(Double(segmentIndex) * centerSeconds * (1.0 / 0.085)))
         let adjustedTimestamps = timestamps.map { $0 + globalFrameOffset }
         let maxFrame = adjustedTimestamps.max() ?? 0
 

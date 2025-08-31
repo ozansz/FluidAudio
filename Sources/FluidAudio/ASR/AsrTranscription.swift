@@ -252,9 +252,9 @@ extension AsrManager {
             let tokenId = tokenIds[i]
             let frameIndex = timestamps[i]
 
-            // Convert encoder frame index to time (approximate: 80ms per frame)
-            let startTime = TimeInterval(frameIndex) * 0.08
-            let endTime = startTime + 0.08  // Approximate token duration
+            // Convert encoder frame index to time (measured: ~85ms per frame)
+            let startTime = TimeInterval(frameIndex) * 0.085
+            let endTime = startTime + 0.085  // Approximate token duration
 
             // Get token text from vocabulary if available
             let tokenText = vocabulary[tokenId] ?? "token_\(tokenId)"
@@ -386,8 +386,8 @@ extension AsrManager {
         guard segmentIndex > 0 else {
             return 0
         }
-        // Use exact encoder frame rate: 80ms per frame = 12.5 fps
-        let encoderFrameRate = 1.0 / 0.08  // 12.5 frames per second
+        // Use measured encoder frame rate: 85ms per frame = ~11.76 fps
+        let encoderFrameRate = 1.0 / 0.085  // ~11.76 frames per second
         let leftContextFrames = Int(round(leftContextSeconds * encoderFrameRate))
 
         return leftContextFrames
