@@ -172,8 +172,9 @@ public actor VadManager {
             // Create input provider
             let input = try MLDictionaryFeatureProvider(dictionary: ["audio_chunk": audioArray])
 
-            // Run prediction
-            let output = try model.prediction(from: input)
+            // Run prediction with async/await for compatibility with different contexts
+            // Some environments (like Expo) require async prediction calls
+            let output = try await model.prediction(from: input)
 
             // Get probability output
             guard let vadProbability = output.featureValue(for: "vad_probability")?.multiArrayValue else {
