@@ -28,11 +28,13 @@ public struct ASRResult: Sendable {
     public let duration: TimeInterval
     public let processingTime: TimeInterval
     public let tokenTimings: [TokenTiming]?
+    public let wordTimings: [WordTiming]?  // New: word-level timings
     public let performanceMetrics: ASRPerformanceMetrics?
 
     public init(
         text: String, confidence: Float, duration: TimeInterval, processingTime: TimeInterval,
         tokenTimings: [TokenTiming]? = nil,
+        wordTimings: [WordTiming]? = nil,
         performanceMetrics: ASRPerformanceMetrics? = nil
     ) {
         self.text = text
@@ -40,6 +42,7 @@ public struct ASRResult: Sendable {
         self.duration = duration
         self.processingTime = processingTime
         self.tokenTimings = tokenTimings
+        self.wordTimings = wordTimings
         self.performanceMetrics = performanceMetrics
     }
 
@@ -65,6 +68,26 @@ public struct TokenTiming: Sendable {
         self.startTime = startTime
         self.endTime = endTime
         self.confidence = confidence
+    }
+}
+
+/// Word-level timing information - more intuitive than token-level
+public struct WordTiming: Sendable {
+    public let word: String
+    public let startTime: TimeInterval
+    public let endTime: TimeInterval
+    public let confidence: Float
+    public let tokenCount: Int  // Number of tokens that make up this word
+
+    public init(
+        word: String, startTime: TimeInterval, endTime: TimeInterval, 
+        confidence: Float, tokenCount: Int
+    ) {
+        self.word = word
+        self.startTime = startTime
+        self.endTime = endTime
+        self.confidence = confidence
+        self.tokenCount = tokenCount
     }
 }
 

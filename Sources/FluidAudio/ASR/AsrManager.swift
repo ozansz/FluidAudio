@@ -379,6 +379,8 @@ public final class AsrManager {
 
         return (text, adjustedTimings)
     }
+    
+
 
     internal func extractFeatureValue(
         from provider: MLFeatureProvider, key: String, errorMessage: String

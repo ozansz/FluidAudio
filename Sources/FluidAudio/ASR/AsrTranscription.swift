@@ -184,6 +184,9 @@ extension AsrManager {
 
         // Use existing timings if provided, otherwise use timings from timestamps
         let resultTimings = tokenTimings.isEmpty ? timingsFromTimestamps : finalTimings
+        
+        // Generate word-level timings from token timings
+        let wordTimings: [WordTiming]? = !resultTimings.isEmpty ? convertTokenTimingsToWordTimings(resultTimings) : nil
 
         if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && duration > 1.0 {
             logger.warning(
@@ -203,7 +206,8 @@ extension AsrManager {
             confidence: confidence,
             duration: duration,
             processingTime: processingTime,
-            tokenTimings: resultTimings
+            tokenTimings: resultTimings,
+            wordTimings: wordTimings
         )
     }
 
@@ -391,6 +395,68 @@ extension AsrManager {
         let leftContextFrames = Int(round(leftContextSeconds * encoderFrameRate))
 
         return leftContextFrames
+    }
+    
+    /// Convert token timings to word timings by grouping tokens based on SentencePiece word boundaries
+    internal func convertTokenTimingsToWordTimings(_ tokenTimings: [TokenTiming]) -> [WordTiming] {
+        guard !tokenTimings.isEmpty else { return [] }
+        
+        var wordTimings: [WordTiming] = []
+        var currentWordTokens: [TokenTiming] = []
+        
+        for tokenTiming in tokenTimings {
+            // Check if this token starts a new word (has space prefix or is the first token)
+            // Note: tokens have already been processed, so ▁ becomes space
+            let startsNewWord = tokenTiming.token.hasPrefix(" ") || currentWordTokens.isEmpty
+            
+            if startsNewWord && !currentWordTokens.isEmpty {
+                // Finish the current word
+                if let wordTiming = createWordTimingFromTokens(currentWordTokens) {
+                    wordTimings.append(wordTiming)
+                }
+                currentWordTokens = []
+            }
+            
+            currentWordTokens.append(tokenTiming)
+        }
+        
+        // Don't forget the last word
+        if !currentWordTokens.isEmpty {
+            if let wordTiming = createWordTimingFromTokens(currentWordTokens) {
+                wordTimings.append(wordTiming)
+            }
+        }
+        
+        return wordTimings
+    }
+    
+    /// Create a WordTiming from a group of TokenTimings that belong to the same word
+    private func createWordTimingFromTokens(_ tokenTimings: [TokenTiming]) -> WordTiming? {
+        guard !tokenTimings.isEmpty else { return nil }
+        
+        // Reconstruct the word by joining tokens and trimming spaces
+        // Note: tokens already have spaces instead of ▁, so we just need to trim
+        let wordText = tokenTimings
+            .map { $0.token }
+            .joined()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !wordText.isEmpty else { return nil }
+        
+        // Use timing from first to last token
+        let startTime = tokenTimings.first!.startTime
+        let endTime = tokenTimings.last!.endTime
+        
+        // Average confidence across all tokens in the word
+        let averageConfidence = tokenTimings.map { $0.confidence }.reduce(0, +) / Float(tokenTimings.count)
+        
+        return WordTiming(
+            word: wordText,
+            startTime: startTime,
+            endTime: endTime,
+            confidence: averageConfidence,
+            tokenCount: tokenTimings.count
+        )
     }
 
 }
